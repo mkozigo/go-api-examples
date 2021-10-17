@@ -27,3 +27,19 @@ $ curl POST http://localhost:8080/albums \
 $ curl GET http://localhost:8080/albums/2 --header "Content-Type: application/json
 
 ```
+
+## Simple Api No Framework
+
+An api example that uses the standard library and no additional http framework
+
+### Resources
+* youtube: [Let's build a REST API in Go with zero dependencies!](https://www.youtube.com/watch?v=2v11Ym6Ct9Q)
+
+### Useful commands
+```bash
+$ go mod init github.com/mkozigo/go-api-examples/simple-api-no-framework
+
+$ curl localhost:8080 | jq
+$ curl -v localhost:8080 | jq
+$ curl -X POST localhost:8080 | jq
+```
