@@ -39,7 +39,9 @@ An api example that uses the standard library and no additional http framework
 ```bash
 $ go mod init github.com/mkozigo/go-api-examples/simple-api-no-framework
 
-$ curl localhost:8080 | jq
-$ curl -v localhost:8080 | jq
-$ curl -X POST localhost:8080 | jq
+$ curl localhost:8080/coasters | jq
+$ curl -v localhost:8080/coasters | jq
+$ curl -I localhost:8080/coasters
+$ curl -X POST localhost:8080/coasters -H 'content-type:application/json' --data '{"name": "Taron", "height": 30, "inPark": "Phantasialand", "manufacturer": "Intamin"}'
+$ curl -X POST localhost:8080/coasters -H 'content-type: application/text' --data '{"name": "Taron", "height": 30, "inPark": "Phantasialand", "manufacturer": "Intamin"}'
 ```

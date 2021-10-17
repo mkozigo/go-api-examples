@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"strings"
 	"sync"
+	"time"
 )
 
 type Coaster struct {
@@ -42,13 +45,25 @@ func (h *coasterHandlers) post(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
+		return
+	}
+
+	ct := r.Header.Get("content-type")
+	log.Println(ct)
+	if ct != "application/json"  {
+		w.WriteHeader(http.StatusUnsupportedMediaType)
+		w.Write([]byte(fmt.Sprintf("need content-type 'application/json', but got '%s'\n", ct)))
+		return		
 	}
 
 	var coaster Coaster
 	if err := json.Unmarshal(bodyBytes, &coaster); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
+		return
 	}
+
+	coaster.ID = fmt.Sprint(time.Now().UnixNano())
 
 	h.Lock()
 	h.store[coaster.ID] = coaster
@@ -70,6 +85,7 @@ func (h *coasterHandlers) get(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
+		return
 	}
 
 	w.Header().Add("content-type", "application/json")
@@ -78,6 +94,39 @@ func (h *coasterHandlers) get(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
+		return
+	}
+}
+
+func (h *coasterHandlers) getCoaster(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) != 3 {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	h.Lock()
+	coaster, ok := h.store[parts[2]]
+	h.Unlock()
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	} else {
+		bytes, err := json.Marshal(coaster)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		w.Header().Add("content-type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(bytes)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
 	}
 }
 
@@ -93,6 +142,7 @@ func main() {
 	coasterHandlers := newCoasterHandlers()
 
 	http.HandleFunc("/coasters", coasterHandlers.coasters)
+	http.HandleFunc("/coasters/", coasterHandlers.getCoaster)
 
 	fmt.Println("Server is running on port '8080'")
 	err := http.ListenAndServe(":8080", nil)
